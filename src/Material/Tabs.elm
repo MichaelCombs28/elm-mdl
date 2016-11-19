@@ -74,7 +74,7 @@ for a live demo.
 -}
 
 import Platform.Cmd exposing (Cmd, none)
-import Html exposing (Html)
+import Html exposing (Html, map)
 import Parts exposing (Indexed)
 import Material.Options as Options exposing (cs, when)
 import Material.Options.Internal as Internal
@@ -118,14 +118,14 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
   case action of
-    Ripple tabIdx action' ->
+    Ripple tabIdx action_ ->
       let
-        ( ripple', cmd ) =
+        ( ripple_, cmd ) =
           Dict.get tabIdx model.ripples
             |> Maybe.withDefault Ripple.model
-            |> Ripple.update action'
+            |> Ripple.update action_
       in
-        ( { model | ripples = Dict.insert tabIdx ripple' model.ripples }, Cmd.map (Ripple tabIdx) cmd )
+        ( { model | ripples = Dict.insert tabIdx ripple_ model.ripples }, Cmd.map (Ripple tabIdx) cmd )
 
 
 
@@ -223,7 +223,7 @@ view lift model options tabs tabContent =
     unwrapLabel tabIdx (Label ( props, content )) =
       Options.styled Html.a
         ([ cs "mdl-tabs__tab"
-         , cs "is-active" `when` (tabIdx == config.activeTab)
+         , when (cs "is-active") (tabIdx == config.activeTab)
          , config.onSelectTab
             |> Maybe.map (\t -> Internal.attribute <| Html.onClick (t tabIdx))
             |> Maybe.withDefault Options.nop
@@ -242,7 +242,7 @@ view lift model options tabs tabContent =
                   (Dict.get tabIdx model.ripples
                     |> Maybe.withDefault Ripple.model
                   )
-                  |> Html.map (Ripple tabIdx >> lift)
+                  |> map (Ripple tabIdx >> lift)
               ]
             ]
          else
@@ -260,8 +260,8 @@ view lift model options tabs tabContent =
       [ cs "mdl-tabs"
       , cs "mdl-js-tabs"
       , cs "is-upgraded"
-      , cs "mdl-js-ripple-effect" `when` config.ripple
-      , cs "mdl-js-ripple-effect--ignore-events" `when` config.ripple
+      , when (cs "mdl-js-ripple-effect") config.ripple
+      , when (cs "mdl-js-ripple-effect--ignore-events") config.ripple
       ]
       []
       [ links
@@ -274,14 +274,14 @@ view lift model options tabs tabContent =
 
 
 type alias Container c =
-  { c | tabs : Indexed Model }
+  { c | tabs : Indexed (List Int) Model }
 
 
 {-| Component render.
 -}
 render :
   (Parts.Msg (Container c) m -> m)
-  -> Parts.Index
+  -> (Parts.Index (List Int))
   -> Container c
   -> List (Property m)
   -> List (Label m)
