@@ -139,19 +139,19 @@ lift_ get set update action model =
 
     case msg of
       ...
-      ButtonsMsg msg' ->
-        lift .buttons (\m x->{m|buttons=x}) ButtonsMsg Demo.Buttons.update msg' model
+      ButtonsMsg msg_ ->
+        lift .buttons (\m x->{m|buttons=x}) ButtonsMsg Demo.Buttons.update msg_ model
 
 This is equivalent to the more verbose
 
     case msg of
       ...
-      ButtonsMsg msg' ->
+      ButtonsMsg msg_ ->
         let
-          (buttons', cmd) =
-            Demo.Buttons.update msg' model.buttons
+          (buttons_, cmd) =
+            Demo.Buttons.update msg_ model.buttons
         in
-          ( { model | buttons = buttons'}
+          ( { model | buttons = buttons_}
           , Cmd.map ButtonsMsg cmd
           )
 -}

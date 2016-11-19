@@ -25,7 +25,7 @@ For a long-form tutorial, you might like [@jadams](https://github.com/jadams) ex
 ### Get help
 
 For more in-depth documentation, refer to the [extensive package
-documentation](http://package.elm-lang.org/packages/debois/elm-mdl/latest/).
+documentation](http://package.elm-lang.org/packages/MichaelCombs28/elm-mdl/latest/).
 
 Ask any questions you may have on
 [stackoverflow](https://stackoverflow.com/questions/ask?tags=elm+elm-mdl)

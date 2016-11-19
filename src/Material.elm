@@ -117,8 +117,8 @@ Here is how you use elm-mdl with parts. First, boilerplate.
         update message model =
           case message of
             ...
-            Mdl message' ->
-              Material.update message' model
+            Mdl message_ ->
+              Material.update message_ model
 
  4.  If your app is using Layout and/or Menu, you need also to set up
  subscriptions and initialisations; see `subscriptions` and `init` below.

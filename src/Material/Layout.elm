@@ -944,7 +944,7 @@ view lift model options { drawer, header, tabs, main } =
                         , ( "mdl-layout--fixed-tabs", config.fixedTabs && hasTabs )
                         ]
                    {- MDL has code to close drawer on ESC, but it seems to be
-                      non-operational. We fix it here. Elm 0.17 doesn't give us a way to
+                      non-operational. We fix it here. Elm 0.18 doesn't give us a way to
                       catch global keyboard events, but we can reasonably assume something inside
                       mdl-layout__container is focused.
                    -}
