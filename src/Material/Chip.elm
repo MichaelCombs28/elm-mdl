@@ -250,7 +250,7 @@ getActionElement config =
 -}
 button : List (Property msg) -> List (Content msg) -> Html msg
 button props =
-    chip Html.button ((Internal.attribute <| Html.Attributes.type' "button") :: props)
+    chip Html.button ((Internal.attribute <| Html.Attributes.type_ "button") :: props)
 
 
 {-| Creates a chip using `Html.span`
@@ -298,10 +298,10 @@ chip element props items =
         isContact =
             List.any (\x -> priority x == 0) items
     in
-        Options.styled' element
+        Options.styled_ element
             ([ cs "mdl-chip"
-             , cs "mdl-chip--contact" `Options.when` isContact
-             , cs "mdl-chip--deletable" `Options.when` isDeletable
+             , Options.when (cs "mdl-chip--contact") isContact
+             , Options.when (cs "mdl-chip--deletable") isDeletable
              , Internal.attribute <| Helpers.blurOn "mouseup"
              , Internal.attribute <| Helpers.blurOn "mouseleave"
              , Internal.attribute <| Helpers.blurOn "touchend"

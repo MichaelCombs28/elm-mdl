@@ -203,11 +203,11 @@ view options =
             Html.div
             [ cs "mdl-slider__container" ]
             []
-            [ Options.styled' Html.input
+            [ Options.styled_ Html.input
                 [ cs "mdl-slider"
                 , cs "mdl-js-slider"
                 , cs "is-upgraded"
-                , cs "is-lowest-value" `when` (fraction == 0)
+                , when (cs "is-lowest-value") (fraction == 0)
                 , listeners
                 , Options.disabled config.disabled
                   -- FIX for Firefox problem where you had to click on the 2px tall slider to initiate drag
@@ -216,7 +216,7 @@ view options =
                   -- This way inner attributes should not override necessary attributes
                 , Options.many config.inner
                 ]
-                [ Html.type' "range"
+                [ Html.type_ "range"
                 , Html.max (toString config.max)
                 , Html.min (toString config.min)
                 , Html.step (toString config.step)

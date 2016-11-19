@@ -64,7 +64,7 @@ spinner options =
                 nop
             ]
             []
-            (List.map createLayer [1..4])
+            (List.map createLayer <| List.range 1 4)
 
 
 {-| Make a spinner visible

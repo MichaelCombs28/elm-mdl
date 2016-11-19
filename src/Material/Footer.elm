@@ -231,7 +231,7 @@ checkbox =
     HtmlContent <|
         Html.input
             [ Html.class "mdl-mega-footer__heading-checkbox"
-            , Html.type' "checkbox"
+            , Html.type_ "checkbox"
               -- For some reason Html.checked True did not work (did not show up in dom)
             , Html.attribute "checked" ""
             ]
@@ -429,11 +429,11 @@ applyPrefix tp prop =
 toHtml : Type -> Footer a -> Html a
 toHtml tp { styles, content, elem } =
     let
-        styles' =
+        styles_ =
             List.map (applyPrefix tp) styles
     in
         Options.styled elem
-            styles'
+            styles_
             (List.map (contentToHtml tp) content)
 
 
