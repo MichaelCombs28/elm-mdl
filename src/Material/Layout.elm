@@ -987,7 +987,7 @@ view lift model options { drawer, header, tabs, main } =
                     , when (css "overflow-x" "visible") (config.mode == Scrolling && config.fixedHeader)
                     , when (css "overflow" "visible") (config.mode == Scrolling && config.fixedHeader) {- Above three lines fixes upstream bug #4180. -}
                     , when
-                        ( ( on "scroll" >> Internal.attribute)
+                        ((on "scroll" >> Internal.attribute)
                             (Decoder.map
                                 (ScrollPane config.fixedHeader >> lift)
                                 (DOM.target DOM.scrollTop)

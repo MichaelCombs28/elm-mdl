@@ -1,13 +1,22 @@
-module Material.Helpers exposing
-  ( filter, blurOn
-  , map1st, map2nd
-  , delay, cmd, pure, effect, cssTransitionStep
-  , lift, lift_
-  , Update, Update_
-  , noAttr
-  , aria
-  , partsUpdatePort
-  )
+module Material.Helpers
+    exposing
+        ( filter
+        , blurOn
+        , map1st
+        , map2nd
+        , delay
+        , cmd
+        , pure
+        , effect
+        , cssTransitionStep
+        , lift
+        , lift_
+        , Update
+        , Update_
+        , noAttr
+        , aria
+        , partsUpdatePort
+        )
 
 {-| Convenience functions. These are mostly trivial functions that are used
 internally in the library; you might
@@ -34,13 +43,12 @@ import Task
 import Process
 
 
-
 {-| Convert a Html element from taking a list of sub-elements to a list of
   Maybe Html. This is convenient if you want to include certain sub-elements
 -}
 filter : (a -> List b -> c) -> a -> List (Maybe b) -> c
 filter elem attr html =
-  elem attr (List.filterMap (\x -> x) html)
+    elem attr (List.filterMap (\x -> x) html)
 
 
 {-| Add an effect to a value. Example use (supposing you have an
@@ -48,17 +56,18 @@ action `MyMsg`):
 
     model |> effect MyMsg
 -}
-effect : Cmd b -> a -> (a, Cmd b)
-effect e x = (x, e)
+effect : Cmd b -> a -> ( a, Cmd b )
+effect e x =
+    ( x, e )
 
 
 {-| Add the trivial effect to a value. Example use:
 
     model |> pure
 -}
-pure : a -> (a, Cmd b)
-pure = effect Cmd.none
-
+pure : a -> ( a, Cmd b )
+pure =
+    effect Cmd.none
 
 
 {-| Attribute which causes element to blur on given event. Example use
@@ -71,7 +80,8 @@ pure = effect Cmd.none
 -}
 blurOn : String -> Html.Attribute m
 blurOn evt =
-  Html.Attributes.attribute ("on" ++ evt) <| "this.blur()"
+    Html.Attributes.attribute ("on" ++ evt) <| "this.blur()"
+
 
 
 -- TUPLES
@@ -81,42 +91,49 @@ blurOn evt =
 
     map1st ((+) 1) (1, "foo") == (2, "foo")
 -}
-map1st : (a -> c) -> (a,b) -> (c,b)
-map1st f (x,y) = (f x, y)
+map1st : (a -> c) -> ( a, b ) -> ( c, b )
+map1st f ( x, y ) =
+    ( f x, y )
 
 
 {-| Map the second element of a tuple
 
     map2nd ((+) 1) ("bar", 3) == ("bar", 4)
 -}
-map2nd : (b -> c) -> (a,b) -> (a,c)
-map2nd f (x,y) = (x, f y)
+map2nd : (b -> c) -> ( a, b ) -> ( a, c )
+map2nd f ( x, y ) =
+    ( x, f y )
 
 
 {-| Variant of EA update function type, where effects may be
 lifted to a different type.
 -}
 type alias Update_ model action action_ =
-  action -> model -> (model, Cmd action_)
+    action -> model -> ( model, Cmd action_ )
 
 
 {-| Standard EA update function type.
 -}
 type alias Update model action =
-  Update_ model action action
+    Update_ model action action
 
 
 {-| Variant of `lift` for effect-free components.
 -}
 lift_ :
-  (model -> submodel) ->                                      -- get
-  (model -> submodel -> model) ->                             -- set
-  (subaction -> submodel -> submodel) ->
-  subaction ->                                                -- action
-  model ->                                                    -- model
-  (model, Cmd action)
+    (model -> submodel)
+    -> -- get
+       (model -> submodel -> model)
+    -> -- set
+       (subaction -> submodel -> submodel)
+    -> subaction
+    -> -- action
+       model
+    -> -- model
+       ( model, Cmd action )
 lift_ get set update action model =
-  (set model (update action (get model)), Cmd.none)
+    ( set model (update action (get model)), Cmd.none )
+
 
 {-| Convenience function for writing update-function boilerplate. Example use:
 
@@ -139,18 +156,25 @@ This is equivalent to the more verbose
           )
 -}
 lift :
-  (model -> submodel) ->                                      -- get
-  (model -> submodel -> model) ->                             -- set
-  (subaction -> action) ->                                    -- fwd
-  Update submodel subaction ->                               -- update
-  subaction ->                                                -- action
-  model ->                                                    -- model
-  (model, Cmd action)
+    (model -> submodel)
+    -> -- get
+       (model -> submodel -> model)
+    -> -- set
+       (subaction -> action)
+    -> -- fwd
+       Update submodel subaction
+    -> -- update
+       subaction
+    -> -- action
+       model
+    -> -- model
+       ( model, Cmd action )
 lift get set fwd update action model =
-  let
-    (submodel_, e) = update action (get model)
-  in
-    (set model submodel_, Cmd.map fwd e)
+    let
+        ( submodel_, e ) =
+            update action (get model)
+    in
+        ( set model submodel_, Cmd.map fwd e )
 
 
 {-|
@@ -158,7 +182,7 @@ lift get set fwd update action model =
 -}
 cmd : msg -> Cmd msg
 cmd msg =
-  Task.perform (always msg) (Task.succeed msg)
+    Task.perform (always msg) (Task.succeed msg)
 
 
 {-| Produce a delayed effect. Suppose you want `MyMsg` to happen 200ms after
@@ -170,7 +194,7 @@ a button is clicked:
 -}
 delay : Time -> a -> Cmd a
 delay t x =
-  Task.perform (always x) (Process.sleep t)
+    Task.perform (always x) (Process.sleep t)
 
 
 {-| Delay a command sufficiently that you can count on triggering CSS
@@ -178,7 +202,11 @@ transitions.
 -}
 cssTransitionStep : a -> Cmd a
 cssTransitionStep x =
-  delay 50 x -- 20 fps
+    delay 50 x
+
+
+
+-- 20 fps
 
 
 {-| Fake attribute with no effect. Useful to conditionally add attributes, e.g.,
@@ -193,26 +221,26 @@ cssTransitionStep x =
 -}
 noAttr : Html.Attribute a
 noAttr =
-  Html.Attributes.attribute "data-elm-mdl-noop" ""
+    Html.Attributes.attribute "data-elm-mdl-noop" ""
 
 
 {-| Install aria-* attributes, conspicuously missing from elm-lang/html.
 -}
 aria : String -> Bool -> Html.Attribute a
 aria name value =
-  if value then
-    Html.Attributes.attribute ("aria-" ++ name) "true"
-  else
-    noAttr
+    if value then
+        Html.Attributes.attribute ("aria-" ++ name) "true"
+    else
+        noAttr
 
 
-{-| Helper function porting elm-parts 4.0 Update type to elm-parts 5.0 -}
-
-partsUpdatePort : Maybe (model, Cmd msg) -> (Maybe model, Cmd msg)
+{-| Helper function porting elm-parts 4.0 Update type to elm-parts 5.0
+-}
+partsUpdatePort : Maybe ( model, Cmd msg ) -> ( Maybe model, Cmd msg )
 partsUpdatePort component =
     case component of
-        Just (model, command) ->
-            (Just model, command)
+        Just ( model, command ) ->
+            ( Just model, command )
 
         Nothing ->
-            (Nothing, Cmd.none)
+            ( Nothing, Cmd.none )

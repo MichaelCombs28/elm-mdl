@@ -1,19 +1,19 @@
 module Material.Tabs
-  exposing
-    ( Label
-    , Property
-    , Msg
-    , render
-    , update
-    , view
-    , label
-    , textLabel
-    , ripple
-    , onSelectTab
-    , activeTab
-    , Model
-    , defaultModel
-    )
+    exposing
+        ( Label
+        , Property
+        , Msg
+        , render
+        , update
+        , view
+        , label
+        , textLabel
+        , ripple
+        , onSelectTab
+        , activeTab
+        , Model
+        , defaultModel
+        )
 
 {-| From the [Material Design Lite documentation](https://getmdl.io/components/index.html#layout-section/tabs):
 
@@ -91,16 +91,16 @@ import Dict exposing (Dict)
 {-| Component model.
 -}
 type alias Model =
-  { ripples : Dict Int Ripple.Model
-  }
+    { ripples : Dict Int Ripple.Model
+    }
 
 
 {-| Default component model constructor.
 -}
 defaultModel : Model
 defaultModel =
-  { ripples = Dict.empty
-  }
+    { ripples = Dict.empty
+    }
 
 
 
@@ -110,22 +110,22 @@ defaultModel =
 {-| Component action.
 -}
 type Msg
-  = Ripple Int Ripple.Msg
+    = Ripple Int Ripple.Msg
 
 
 {-| Component update.
 -}
 update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
-  case action of
-    Ripple tabIdx action_ ->
-      let
-        ( ripple_, cmd ) =
-          Dict.get tabIdx model.ripples
-            |> Maybe.withDefault Ripple.model
-            |> Ripple.update action_
-      in
-        ( { model | ripples = Dict.insert tabIdx ripple_ model.ripples }, Cmd.map (Ripple tabIdx) cmd )
+    case action of
+        Ripple tabIdx action_ ->
+            let
+                ( ripple_, cmd ) =
+                    Dict.get tabIdx model.ripples
+                        |> Maybe.withDefault Ripple.model
+                        |> Ripple.update action_
+            in
+                ( { model | ripples = Dict.insert tabIdx ripple_ model.ripples }, Cmd.map (Ripple tabIdx) cmd )
 
 
 
@@ -133,37 +133,37 @@ update action model =
 
 
 type alias Config m =
-  { ripple : Bool
-  , onSelectTab : Maybe (Int -> m)
-  , activeTab : Int
-  }
+    { ripple : Bool
+    , onSelectTab : Maybe (Int -> m)
+    , activeTab : Int
+    }
 
 
 defaultConfig : Config m
 defaultConfig =
-  { ripple = False
-  , onSelectTab = Nothing
-  , activeTab = 0
-  }
+    { ripple = False
+    , onSelectTab = Nothing
+    , activeTab = 0
+    }
 
 
 {-| Tab options.
 -}
 type alias Property m =
-  Options.Property (Config m) m
+    Options.Property (Config m) m
 
 
 {-| Opaque `Label` type
 -}
 type Label m
-  = Label ( List (Property m), List (Html m) )
+    = Label ( List (Property m), List (Html m) )
 
 
 {-| Create tab `label`
 -}
 label : List (Property m) -> List (Html m) -> Label m
 label p c =
-  Label ( p, c )
+    Label ( p, c )
 
 
 {-| Create tab `label` with simple text.
@@ -172,101 +172,101 @@ utility function to help create labels with just text.
 -}
 textLabel : List (Property m) -> String -> Label m
 textLabel p c =
-  label p [ Html.text c ]
+    label p [ Html.text c ]
 
 
 {-| Make tabs ripple when clicked.
 -}
 ripple : Property m
 ripple =
-  Options.set (\options -> { options | ripple = True })
+    Options.set (\options -> { options | ripple = True })
 
 
 {-| Receieve notification when tab `k` is selected.
 -}
 onSelectTab : (Int -> m) -> Property m
 onSelectTab k =
-  Options.set (\config -> { config | onSelectTab = Just k })
+    Options.set (\config -> { config | onSelectTab = Just k })
 
 
 {-| Set the active tab.
 -}
 activeTab : Int -> Property m
 activeTab k =
-  Options.set (\config -> { config | activeTab = k })
+    Options.set (\config -> { config | activeTab = k })
 
 
 {-| Component view.
 -}
 view : (Msg -> m) -> Model -> List (Property m) -> List (Label m) -> List (Html m) -> Html m
 view lift model options tabs tabContent =
-  let
-    summary =
-      Options.collect defaultConfig options
+    let
+        summary =
+            Options.collect defaultConfig options
 
-    config =
-      summary.config
+        config =
+            summary.config
 
-    -- Wraps the tab content into a proper tab panel
-    -- Always active because the visible tab is always active.
-    {- Keyed to prevent scrolling state being retained when we switch tab.
-       This does cause scrolling to reset when changing tabs.
-    -}
-    wrapContent =
-      Keyed.node "div"
-        [ Html.classList
-            [ ( "mdl-tab__panel", True )
-            , ( "is-active", True )
+        -- Wraps the tab content into a proper tab panel
+        -- Always active because the visible tab is always active.
+        {- Keyed to prevent scrolling state being retained when we switch tab.
+           This does cause scrolling to reset when changing tabs.
+        -}
+        wrapContent =
+            Keyed.node "div"
+                [ Html.classList
+                    [ ( "mdl-tab__panel", True )
+                    , ( "is-active", True )
+                    ]
+                ]
+
+        unwrapLabel tabIdx (Label ( props, content )) =
+            Options.styled Html.a
+                ([ cs "mdl-tabs__tab"
+                 , when (cs "is-active") (tabIdx == config.activeTab)
+                 , config.onSelectTab
+                    |> Maybe.map (\t -> Internal.attribute <| Html.onClick (t tabIdx))
+                    |> Maybe.withDefault Options.nop
+                 ]
+                    ++ props
+                )
+                (if config.ripple then
+                    List.concat
+                        [ content
+                        , [ Ripple.view
+                                [ Html.classList
+                                    [ ( "mdl-tabs__ripple-container", True )
+                                    , ( "mdl-tabs__ripple-js-effect", True )
+                                    ]
+                                ]
+                                (Dict.get tabIdx model.ripples
+                                    |> Maybe.withDefault Ripple.model
+                                )
+                                |> map (Ripple tabIdx >> lift)
+                          ]
+                        ]
+                 else
+                    content
+                )
+
+        links =
+            Options.styled Html.div
+                [ cs "mdl-tabs__tab-bar"
+                ]
+                (List.indexedMap unwrapLabel tabs)
+    in
+        Options.apply summary
+            Html.div
+            [ cs "mdl-tabs"
+            , cs "mdl-js-tabs"
+            , cs "is-upgraded"
+            , when (cs "mdl-js-ripple-effect") config.ripple
+            , when (cs "mdl-js-ripple-effect--ignore-events") config.ripple
             ]
-        ]
-
-    unwrapLabel tabIdx (Label ( props, content )) =
-      Options.styled Html.a
-        ([ cs "mdl-tabs__tab"
-         , when (cs "is-active") (tabIdx == config.activeTab)
-         , config.onSelectTab
-            |> Maybe.map (\t -> Internal.attribute <| Html.onClick (t tabIdx))
-            |> Maybe.withDefault Options.nop
-         ]
-          ++ props
-        )
-        (if config.ripple then
-          List.concat
-            [ content
-            , [ Ripple.view
-                  [ Html.classList
-                      [ ( "mdl-tabs__ripple-container", True )
-                      , ( "mdl-tabs__ripple-js-effect", True )
-                      ]
-                  ]
-                  (Dict.get tabIdx model.ripples
-                    |> Maybe.withDefault Ripple.model
-                  )
-                  |> map (Ripple tabIdx >> lift)
-              ]
+            []
+            [ links
+            , (wrapContent [ ( toString config.activeTab, Html.div [] tabContent ) ])
             ]
-         else
-          content
-        )
-
-    links =
-      Options.styled Html.div
-        [ cs "mdl-tabs__tab-bar"
-        ]
-        (List.indexedMap unwrapLabel tabs)
-  in
-    Options.apply summary
-      Html.div
-      [ cs "mdl-tabs"
-      , cs "mdl-js-tabs"
-      , cs "is-upgraded"
-      , when (cs "mdl-js-ripple-effect") config.ripple
-      , when (cs "mdl-js-ripple-effect--ignore-events") config.ripple
-      ]
-      []
-      [ links
-      , (wrapContent [ ( toString config.activeTab, Html.div [] tabContent ) ])
-      ]
 
 
 
@@ -274,20 +274,23 @@ view lift model options tabs tabContent =
 
 
 type alias Container c =
-  { c | tabs : Indexed (List Int) Model }
+    { c | tabs : Indexed (List Int) Model }
 
 
 {-| Component render.
 -}
 render :
-  (Parts.Msg (Container c) m -> m)
-  -> (Parts.Index (List Int))
-  -> Container c
-  -> List (Property m)
-  -> List (Label m)
-  -> List (Html m)
-  -> Html m
+    (Parts.Msg (Container c) m -> m)
+    -> Parts.Index (List Int)
+    -> Container c
+    -> List (Property m)
+    -> List (Label m)
+    -> List (Html m)
+    -> Html m
 render =
-  Parts.create
-    view (Parts.generalize update)
-   .tabs (\x y -> { y | tabs = x }) defaultModel
+    Parts.create
+        view
+        (Parts.generalize update)
+        .tabs
+        (\x y -> { y | tabs = x })
+        defaultModel

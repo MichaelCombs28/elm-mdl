@@ -1,10 +1,21 @@
-module Material.Toggles exposing
-  ( Model, defaultModel
-  , Msg, update
-  , viewSwitch, viewCheckbox, viewRadio
-  , switch, checkbox, radio
-  , onClick, ripple, disabled, value, group
-  )
+module Material.Toggles
+    exposing
+        ( Model
+        , defaultModel
+        , Msg
+        , update
+        , viewSwitch
+        , viewCheckbox
+        , viewRadio
+        , switch
+        , checkbox
+        , radio
+        , onClick
+        , ripple
+        , disabled
+        , value
+        , group
+        )
 
 {-| From the [Material Design Lite documentation](http://www.getmdl.io/index.html#toggles-section/checkbox):
 
@@ -41,19 +52,15 @@ for a live demo.
 
 -}
 
-
 import Platform.Cmd exposing (Cmd, none)
 import Html exposing (..)
 import Html.Attributes exposing (type_, class, disabled, checked)
 import Html.Events exposing (on, onFocus, onBlur)
 import Json.Decode as Json
-
 import Parts exposing (Indexed)
-
 import Material.Options as Options exposing (Style, cs, styled, many, when, maybe)
 import Material.Helpers exposing (map1st, map2nd, blurOn, filter, noAttr)
 import Material.Ripple as Ripple
-
 
 
 -- MODEL
@@ -62,18 +69,19 @@ import Material.Ripple as Ripple
 {-| Component model.
 -}
 type alias Model =
-  { ripple : Ripple.Model
-  , isFocused : Bool
-  }
+    { ripple : Ripple.Model
+    , isFocused : Bool
+    }
 
 
 {-| Default component model.
 -}
 defaultModel : Model
 defaultModel =
-  { ripple = Ripple.model
-  , isFocused = False
-  }
+    { ripple = Ripple.model
+    , isFocused = False
+    }
+
 
 
 -- ACTION, UPDATE
@@ -82,22 +90,22 @@ defaultModel =
 {-| Component action.
 -}
 type Msg
-  = Ripple Ripple.Msg
-  | SetFocus Bool
+    = Ripple Ripple.Msg
+    | SetFocus Bool
 
 
 {-| Component update.
 -}
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
-  case action of
-    Ripple rip ->
-      Ripple.update rip model.ripple
-        |> map1st (\r -> { model | ripple = r })
-        |> map2nd (Cmd.map Ripple)
+    case action of
+        Ripple rip ->
+            Ripple.update rip model.ripple
+                |> map1st (\r -> { model | ripple = r })
+                |> map2nd (Cmd.map Ripple)
 
-    SetFocus focus ->
-      ( { model | isFocused = focus }, none )
+        SetFocus focus ->
+            ( { model | isFocused = focus }, none )
 
 
 
@@ -105,30 +113,30 @@ update action model =
 
 
 type alias Config m =
-  { isDisabled : Bool
-  , value : Bool
-  , ripple : Bool
-  , group : Maybe (Attribute m)
-  , onClick : Maybe (Attribute m)
-  , inner : List (Options.Style m)
-  }
+    { isDisabled : Bool
+    , value : Bool
+    , ripple : Bool
+    , group : Maybe (Attribute m)
+    , onClick : Maybe (Attribute m)
+    , inner : List (Options.Style m)
+    }
 
 
 defaultConfig : Config m
 defaultConfig =
-  { isDisabled = False
-  , value = False
-  , ripple = False
-  , group = Nothing
-  , onClick = Nothing
-  , inner = []
-  }
+    { isDisabled = False
+    , value = False
+    , ripple = False
+    , group = Nothing
+    , onClick = Nothing
+    , inner = []
+    }
 
 
 {-| Properties for Button options.
 -}
 type alias Property m =
-  Options.Property (Config m) m
+    Options.Property (Config m) m
 
 
 {-| Add an `on "click"` handler to a toggle. Argument is the
@@ -136,32 +144,32 @@ new value of the toggle (that is, the negation of the current value).
 -}
 onClick : m -> Property m
 onClick x =
-  Options.set
-    (\options -> { options | onClick = Just (Html.Events.on "change" (Json.succeed x)) })
+    Options.set
+        (\options -> { options | onClick = Just (Html.Events.on "change" (Json.succeed x)) })
 
 
 {-| Set toggle to ripple when clicked.
 -}
 ripple : Property m
 ripple =
-  Options.set
-    (\options -> { options | ripple = True })
+    Options.set
+        (\options -> { options | ripple = True })
 
 
 {-| Set toggle to "disabled".
 -}
 disabled : Property m
 disabled =
-  Options.set
-    (\options -> { options | isDisabled = True })
+    Options.set
+        (\options -> { options | isDisabled = True })
 
 
 {-| Set toggle value
 -}
 value : Bool -> Property m
 value b =
-  Options.set
-    (\options -> { options | value = b })
+    Options.set
+        (\options -> { options | value = b })
 
 
 {-| Set radio-button group id. Only one button in the same group can be checked
@@ -169,188 +177,197 @@ at a time.
 -}
 group : String -> Property m
 group s =
-  Options.set
-    (\options -> { options | group = Just (Html.Attributes.name s) })
-
+    Options.set
+        (\options -> { options | group = Just (Html.Attributes.name s) })
 
 
 top : (Msg -> m) -> String -> Model -> Options.Summary (Config m) m -> List (Html m) -> Html m
 top lift group model summary elems =
-  let
-    cfg = summary.config
-  in
-    Options.apply summary label
-      [ cs ("mdl-" ++ group)
-      , cs ("mdl-js-" ++ group)
-      , cs "mdl-js-ripple-effect" `when` cfg.ripple
-      , cs "mdl-js-ripple-effect--ignore-events" `when` cfg.ripple
-      , cs "is-upgraded"
-      , cs "is-checked" `when` cfg.value
-      , cs "is-focused" `when` model.isFocused
-      ]
-      [ blurOn "mouseup"
-      , onFocus (lift (SetFocus True))
-      , onBlur (lift (SetFocus False))
-      , cfg.onClick |> Maybe.withDefault noAttr
-      ]
-      (List.concat
-        [ elems
-        , if cfg.ripple then
-            [ Html.map (Ripple >> lift) <| Ripple.view
-               [ class "mdl-switch__ripple-container mdl-js-ripple-effect mdl-ripple--center" ]
-               model.ripple
+    let
+        cfg =
+            summary.config
+    in
+        Options.apply summary
+            label
+            [ cs ("mdl-" ++ group)
+            , cs ("mdl-js-" ++ group)
+            , when (cs "mdl-js-ripple-effect") cfg.ripple
+            , when (cs "mdl-js-ripple-effect--ignore-events") cfg.ripple
+            , cs "is-upgraded"
+            , when (cs "is-checked") cfg.value
+            , when (cs "is-focused") model.isFocused
             ]
-          else
-            []
-        ])
-
+            [ blurOn "mouseup"
+            , onFocus (lift (SetFocus True))
+            , onBlur (lift (SetFocus False))
+            , cfg.onClick |> Maybe.withDefault noAttr
+            ]
+            (List.concat
+                [ elems
+                , if cfg.ripple then
+                    [ Html.map (Ripple >> lift) <|
+                        Ripple.view
+                            [ class "mdl-switch__ripple-container mdl-js-ripple-effect mdl-ripple--center" ]
+                            model.ripple
+                    ]
+                  else
+                    []
+                ]
+            )
 
 
 {-| Component view (checkbox).
 -}
 viewCheckbox : (Msg -> m) -> Model -> List (Property m) -> List (Html m) -> Html m
 viewCheckbox lift model config elems =
-  let
-    summary = Options.collect defaultConfig config
-    cfg = summary.config
-  in
-    [ Options.styled' Html.input
-      [ cs "mdl-checkbox__input"
-      , Options.many cfg.inner
-      ]
-      [ type_ "checkbox"
-      , Html.Attributes.disabled cfg.isDisabled
-      , checked cfg.value
-        {- The checked attribute is not rendered. Switch still seems to
-        work, though, but accessibility is probably compromised.
-        https://github.com/evancz/elm-html/issues/91
-        -}
-      ]
-      []
-    , span [ class ("mdl-checkbox__label") ] elems
-    , span [ class "mdl-checkbox__focus-helper" ] []
-    , span
-        [ class "mdl-checkbox__box-outline" ]
-        [ span
-            [ class "mdl-checkbox__tick-outline" ]
+    let
+        summary =
+            Options.collect defaultConfig config
+
+        cfg =
+            summary.config
+    in
+        [ Options.styled_ Html.input
+            [ cs "mdl-checkbox__input"
+            , Options.many cfg.inner
+            ]
+            [ type_ "checkbox"
+            , Html.Attributes.disabled cfg.isDisabled
+            , checked cfg.value
+              {- The checked attribute is not rendered. Switch still seems to
+                 work, though, but accessibility is probably compromised.
+                 https://github.com/evancz/elm-html/issues/91
+              -}
+            ]
             []
+        , span [ class ("mdl-checkbox__label") ] elems
+        , span [ class "mdl-checkbox__focus-helper" ] []
+        , span
+            [ class "mdl-checkbox__box-outline" ]
+            [ span
+                [ class "mdl-checkbox__tick-outline" ]
+                []
+            ]
         ]
-    ]
-    |> top lift "checkbox" model summary
+            |> top lift "checkbox" model summary
 
 
 {-| Component view (switch)
 -}
 viewSwitch : (Msg -> m) -> Model -> List (Property m) -> List (Html m) -> Html m
 viewSwitch lift model config elems =
-  let
-    summary = Options.collect defaultConfig config
-    cfg = summary.config
-  in
-    [ Options.styled' Html.input
-      [ cs "mdl-switch__input"
-      , Options.many cfg.inner
-      ]
-      [ type_ "checkbox"
-      , Html.Attributes.disabled cfg.isDisabled
-      , checked cfg.value
-        {- the checked attribute is not rendered. Switch still seems to
-        work, though, but accessibility is probably compromised.
-        https://github.com/evancz/elm-html/issues/91
-        -}
-      ]
-      []
-    ,  span [ class "mdl-switch__label" ] elems
-    ,  div [ class "mdl-switch__track" ] []
-    ,  div
-         [ class "mdl-switch__thumb" ]
-         [ span [ class "mdl-switch__focus-helper" ] [] ]
-    ]
-    |> top lift "switch" model summary
+    let
+        summary =
+            Options.collect defaultConfig config
+
+        cfg =
+            summary.config
+    in
+        [ Options.styled_ Html.input
+            [ cs "mdl-switch__input"
+            , Options.many cfg.inner
+            ]
+            [ type_ "checkbox"
+            , Html.Attributes.disabled cfg.isDisabled
+            , checked cfg.value
+              {- the checked attribute is not rendered. Switch still seems to
+                 work, though, but accessibility is probably compromised.
+                 https://github.com/evancz/elm-html/issues/91
+              -}
+            ]
+            []
+        , span [ class "mdl-switch__label" ] elems
+        , div [ class "mdl-switch__track" ] []
+        , div
+            [ class "mdl-switch__thumb" ]
+            [ span [ class "mdl-switch__focus-helper" ] [] ]
+        ]
+            |> top lift "switch" model summary
 
 
 {-| Component view (radio button)
 -}
 viewRadio : (Msg -> m) -> Model -> List (Property m) -> List (Html m) -> Html m
 viewRadio lift model config elems =
-  let
-    summary = Options.collect defaultConfig config
-    cfg = summary.config
-  in
-    [ Options.styled' Html.input
-      [ cs "mdl-radio__button"
-      , Options.many cfg.inner
-      ]
-      (List.filterMap identity
-        [ Just (type_ "radio")
-        , Just (Html.Attributes.disabled cfg.isDisabled)
-        , Just (checked cfg.value)
-        , cfg.group
+    let
+        summary =
+            Options.collect defaultConfig config
+
+        cfg =
+            summary.config
+    in
+        [ Options.styled_ Html.input
+            [ cs "mdl-radio__button"
+            , Options.many cfg.inner
+            ]
+            (List.filterMap identity
+                [ Just (type_ "radio")
+                , Just (Html.Attributes.disabled cfg.isDisabled)
+                , Just (checked cfg.value)
+                , cfg.group
+                ]
+            )
+            []
+        , span [ class "mdl-radio__label" ] elems
+        , span [ class "mdl-radio__outer-circle" ] []
+        , span [ class "mdl-radio__inner-circle" ] []
         ]
-      )
-      []
-    , span [ class "mdl-radio__label" ] elems
-    , span [ class "mdl-radio__outer-circle" ] []
-    , span [ class "mdl-radio__inner-circle" ] []
-    ]
-    |> top lift "radio" model summary
+            |> top lift "radio" model summary
 
 
 
 -- COMPONENT
 
+
 {-|
 -}
 type alias Container c =
-  { c | toggles : Indexed Model }
+    { c | toggles : Indexed (List Int) Model }
 
 
-render
-   : ((Msg -> b) -> Parts.View Model c)
-  -> (Parts.Msg { d | toggles : Indexed Model } b -> b)
-  -> Parts.Index
-  -> Parts.View { d | toggles : Indexed Model } c
+render :
+    ((Msg -> b) -> Parts.View Model c)
+    -> (Parts.Msg { d | toggles : Indexed (List Int) Model } b -> b)
+    -> Parts.Index (List Int)
+    -> Parts.View { d | toggles : Indexed (List Int) Model } c
 render view =
-  Parts.create view (Parts.generalize update) .toggles (\x y -> {y | toggles=x}) defaultModel
+    Parts.create view (Parts.generalize update) .toggles (\x y -> { y | toggles = x }) defaultModel
 
 
 {-| Component render (checkbox)
 -}
-checkbox
-  : (Parts.Msg (Container c) m -> m)
-  -> Parts.Index
-  -> (Container c)
-  -> List (Property m)
-  -> List (Html m)
-  -> Html m
+checkbox :
+    (Parts.Msg (Container c) m -> m)
+    -> Parts.Index (List Int)
+    -> Container c
+    -> List (Property m)
+    -> List (Html m)
+    -> Html m
 checkbox =
-  render viewCheckbox
+    render viewCheckbox
 
 
 {-| Component render (switch)
 -}
-switch
-  : (Parts.Msg (Container c) m -> m)
-  -> Parts.Index
-  -> (Container c)
-  -> List (Property m)
-  -> List (Html m)
-  -> Html m
+switch :
+    (Parts.Msg (Container c) m -> m)
+    -> Parts.Index (List Int)
+    -> Container c
+    -> List (Property m)
+    -> List (Html m)
+    -> Html m
 switch =
-  render viewSwitch
+    render viewSwitch
 
 
 {-| Component render (radio button)
 -}
-radio
-  : (Parts.Msg (Container c) m -> m)
-  -> Parts.Index
-  -> (Container c)
-  -> List (Property m)
-  -> List (Html m)
-  -> Html m
+radio :
+    (Parts.Msg (Container c) m -> m)
+    -> Parts.Index (List Int)
+    -> Container c
+    -> List (Property m)
+    -> List (Html m)
+    -> Html m
 radio =
-  render viewRadio
-
-
-
+    render viewRadio
