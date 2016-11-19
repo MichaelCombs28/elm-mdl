@@ -1,8 +1,7 @@
 {- This file shows how to use elm-mdl components as vanilla TEA components. You
-are unlikely to want this; consider looking at Counter.elm instead. 
+are unlikely to want this; consider looking at Counter.elm instead.
 -}
 
-import Html.App as App
 import Html exposing (..)
 import Html.Attributes exposing (href, class, style)
 import Platform.Cmd exposing (Cmd)
@@ -15,18 +14,18 @@ import Material.Options exposing (css)
 -- MODEL
 
 
-type alias Model = 
+type alias Model =
   { count : Int
   , increaseButtonModel : Button.Model
   , resetButtonModel : Button.Model
   }
 
 
-model : Model 
-model = 
+model : Model
+model =
   { count = 0
-  , increaseButtonModel = Button.defaultModel 
-  , resetButtonModel = Button.defaultModel 
+  , increaseButtonModel = Button.defaultModel
+  , resetButtonModel = Button.defaultModel
   }
 
 
@@ -41,12 +40,12 @@ type Msg
 
 
 increase : Model -> Model
-increase model = 
+increase model =
   { model | count = model.count + 1 }
 
 
-reset : Model -> Model 
-reset model = 
+reset : Model -> Model
+reset model =
    { model | count = 0 }
 
 
@@ -54,30 +53,30 @@ reset model =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Increase -> 
-       ( { model | count = model.count + 1 } 
+    Increase ->
+       ( { model | count = model.count + 1 }
        , Cmd.none
        )
- 
-    Reset -> 
+
+    Reset ->
        ( { model | count = 0 }
        , Cmd.none
        )
- 
-    IncreaseButtonMsg msg' -> 
-      let 
+
+    IncreaseButtonMsg msg_ ->
+      let
         (submodel, fx) =
-          Button.update msg' model.increaseButtonModel
-      in 
+          Button.update msg_ model.increaseButtonModel
+      in
         ( { model | increaseButtonModel = submodel }
         , Cmd.map IncreaseButtonMsg fx
         )
 
-    ResetButtonMsg msg' -> 
-      let 
+    ResetButtonMsg msg_ ->
+      let
         (submodel, fx) =
-          Button.update msg' model.resetButtonModel 
-      in 
+          Button.update msg_ model.resetButtonModel
+      in
         ( { model | resetButtonModel = submodel }
         , Cmd.map ResetButtonMsg fx
         )
@@ -92,22 +91,22 @@ view model =
     [ style [ ("padding", "2rem") ] ]
     [ text ("Current count: " ++ toString model.count )
     , Button.view IncreaseButtonMsg model.increaseButtonModel
-        [ Button.onClick Increase 
+        [ Button.onClick Increase
         , css "margin" "0 24px"
         ]
         [ text "Increase" ]
-    , Button.view ResetButtonMsg model.resetButtonModel 
-        [ Button.onClick Reset ] 
+    , Button.view ResetButtonMsg model.resetButtonModel
+        [ Button.onClick Reset ]
         [ text "Reset" ]
     ]
-  |> Material.Scheme.top 
+  |> Material.Scheme.top
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-  App.program 
-    { init = ( model, Cmd.none ) 
+  Html.program
+    { init = ( model, Cmd.none )
     , view = view
-    , subscriptions = always Sub.none 
+    , subscriptions = always Sub.none
     , update = update
     }
