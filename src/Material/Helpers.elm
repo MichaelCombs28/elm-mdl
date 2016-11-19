@@ -6,6 +6,7 @@ module Material.Helpers exposing
   , Update, Update_
   , noAttr
   , aria
+  , partsUpdatePort
   )
 
 {-| Convenience functions. These are mostly trivial functions that are used
@@ -22,7 +23,7 @@ find some of them useful.
 @docs map1st, map2nd
 
 # Elm architecture
-@docs Update, Update_, lift, lift_
+@docs Update, Update_, lift, lift_, partsUpdatePort
 -}
 
 import Html
@@ -31,6 +32,7 @@ import Platform.Cmd exposing (Cmd)
 import Time exposing (Time)
 import Task
 import Process
+
 
 
 {-| Convert a Html element from taking a list of sub-elements to a list of
@@ -202,3 +204,15 @@ aria name value =
     Html.Attributes.attribute ("aria-" ++ name) "true"
   else
     noAttr
+
+
+{-| Helper function porting elm-parts 4.0 Update type to elm-parts 5.0 -}
+
+partsUpdatePort : Maybe (model, Cmd msg) -> (Maybe model, Cmd msg)
+partsUpdatePort component =
+    case component of
+        Just (model, command) ->
+            (Just model, command)
+
+        Nothing ->
+            (Nothing, Cmd.none)

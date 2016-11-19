@@ -163,10 +163,18 @@ import DOM
 init : ( Model, Cmd Msg )
 init =
     let
+        result_ : Result Int Int -> Msg
+        result_ result =
+            case result of
+                Ok a ->
+                    Resize a
+
+                Err a ->
+                    Resize (Debug.log "Can't get initial window dimensions. Guessing " 1025)
+
         measureScreenSize =
             Task.attempt
-                (\_ -> Resize (Debug.log "Can't get initial window dimensions. Guessing " 1025))
-                Resize
+                result_
                 Window.width
     in
         ( defaultModel, measureScreenSize )
@@ -623,11 +631,11 @@ tabsView lift config model ( tabs, tabStyles ) =
                 styled div
                     [ cs "mdl-layout__tab-bar-button"
                     , cs ("mdl-layout__tab-bar-" ++ dir ++ "-button")
-                    , when <|
-                        cs "is-active"
-                            ((direction == Left && model.tabScrollState.canScrollLeft)
-                                || (direction == Right && model.tabScrollState.canScrollRight)
-                            )
+                    , when
+                        (cs "is-active")
+                        ((direction == Left && model.tabScrollState.canScrollLeft)
+                            || (direction == Right && model.tabScrollState.canScrollRight)
+                        )
                     , Options.many tabStyles
                     ]
                     [ Icon.view ("chevron_" ++ dir)
@@ -979,10 +987,11 @@ view lift model options { drawer, header, tabs, main } =
                     , when (css "overflow-x" "visible") (config.mode == Scrolling && config.fixedHeader)
                     , when (css "overflow" "visible") (config.mode == Scrolling && config.fixedHeader) {- Above three lines fixes upstream bug #4180. -}
                     , when
-                        (on "scroll" >> Internal.attribute)
-                        (Decoder.map
-                            (ScrollPane config.fixedHeader >> lift)
-                            (DOM.target DOM.scrollTop)
+                        ( ( on "scroll" >> Internal.attribute)
+                            (Decoder.map
+                                (ScrollPane config.fixedHeader >> lift)
+                                (DOM.target DOM.scrollTop)
+                            )
                         )
                         (isWaterfall config.mode)
                     ]
@@ -1020,7 +1029,7 @@ render :
 render =
     Parts.create1
         view
-        update_
+        (\x y z -> update_ x y z |> Helpers.partsUpdatePort)
         .layout
         (\x c -> { c | layout = x })
 
@@ -1028,7 +1037,7 @@ render =
 pack : (Parts.Msg (Container b) m -> m) -> Msg -> m
 pack fwd =
     Parts.pack1
-        update_
+        (\x y z -> update_ x y z |> Helpers.partsUpdatePort)
         .layout
         (\x c -> { c | layout = x })
         fwd
