@@ -9,6 +9,9 @@ CSS/JS implementation of the
 
 [![Build Status](https://travis-ci.org/debois/elm-mdl.svg?branch=master)](https://travis-ci.org/debois/elm-mdl)
 
+### Changes
+* Updated to Elm 0.18
+
 ### Get Started
 
 Adapt

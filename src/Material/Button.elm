@@ -6,7 +6,7 @@ module Material.Button exposing
   , onClick
   , Property
   , render
-  , type'
+  , type_
   )
 
 {-| From the [Material Design Lite documentation](http://www.getmdl.io/components/#buttons-section):
@@ -40,7 +40,7 @@ for a live demo.
 # Options
 
 @docs Property
-@docs type'
+@docs type_
 
 ## Appearance
 @docs plain, colored, primary, accent
@@ -64,7 +64,6 @@ for details about what type of buttons are appropriate for which situations.
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events
-import Html.App
 import Platform.Cmd exposing (Cmd, none)
 
 
@@ -114,7 +113,7 @@ type alias Config m =
   { ripple : Bool
   , onClick : Maybe (Attribute m)
   , disabled : Bool
-  , type' : Maybe String
+  , type_ : Maybe String
   }
 
 
@@ -123,7 +122,7 @@ defaultConfig =
   { ripple = False
   , onClick = Nothing
   , disabled = False
-  , type' = Nothing
+  , type_ = Nothing
   }
 
 
@@ -188,17 +187,17 @@ accent =
 {-| Sets the type of the button e.g.
 
     Button.render ...
-      [ Button.type' "submit"
+      [ Button.type_ "submit"
       ]
       [ ... ]
 -}
-type' : String -> Property m
-type' tp =
+type_ : String -> Property m
+type_ tp =
   Options.set
-    (\options -> { options | type' = Just tp })
+    (\options -> { options | type_ = Just tp })
 
 
-{- Ladies & Gentlemen: My nastiest hack ever. 
+{- Ladies & Gentlemen: My nastiest hack ever.
 
 Buttons with ripples are implemented as
   <button> ... <span> ... </span></button>
@@ -253,10 +252,10 @@ view lift model config html =
           Nothing
       ]
 
-    type' =
-      case summary.config.type' of
+    type_ =
+      case summary.config.type_ of
         Nothing -> []
-        Just tp -> [ Just <| Html.Attributes.type' tp ]
+        Just tp -> [ Just <| Html.Attributes.type_ tp ]
 
   in
     Options.apply summary button
@@ -264,13 +263,13 @@ view lift model config html =
       , cs "mdl-js-button"
       , cs "mdl-js-ripple-effect" `when` summary.config.ripple
       ]
-      (List.concat [startListeners, stopListeners, misc, type']
+      (List.concat [startListeners, stopListeners, misc, type_]
          |> List.filterMap identity)
       (if summary.config.ripple then
           List.concat
             [ html
             -- Ripple element must be last or blurAndForward hack fails.
-            , [ Html.App.map lift <| Ripple.view'
+            , [ Html.map lift <| Ripple.view'
                   [ class "mdl-button__ripple-container"
                   --, Helpers.blurOn "mouseup"
                   , Ripple.upOn "blur"

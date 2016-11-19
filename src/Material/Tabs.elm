@@ -79,7 +79,6 @@ import Parts exposing (Indexed)
 import Material.Options as Options exposing (cs, when)
 import Material.Options.Internal as Internal
 import Material.Ripple as Ripple
-import Html.App
 import Html.Attributes as Html exposing (class)
 import Html.Events as Html
 import Html.Keyed as Keyed
@@ -243,7 +242,7 @@ view lift model options tabs tabContent =
                   (Dict.get tabIdx model.ripples
                     |> Maybe.withDefault Ripple.model
                   )
-                  |> Html.App.map (Ripple tabIdx >> lift)
+                  |> Html.map (Ripple tabIdx >> lift)
               ]
             ]
          else
@@ -289,6 +288,6 @@ render :
   -> List (Html m)
   -> Html m
 render =
-  Parts.create 
-    view (Parts.generalize update) 
+  Parts.create
+    view (Parts.generalize update)
    .tabs (\x y -> { y | tabs = x }) defaultModel

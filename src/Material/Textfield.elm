@@ -1,9 +1,9 @@
-module Material.Textfield exposing 
+module Material.Textfield exposing
   ( Property, label, floatingLabel, error, value, disabled, password
   , onInput
   , Msg, Model, defaultModel, update, view
   , render
-  , text', textarea, rows, cols
+  , text_, textarea, rows, cols
   , autofocus
   , maxlength
   , onBlur
@@ -34,16 +34,16 @@ module Material.Textfield exposing
 > coding requirements. The types are single-line, multi-line, and expandable.
 
 
-Refer to 
+Refer to
 [this site](https://debois.github.io/elm-mdl/#textfields)
 for a live demo.
- 
+
 # Component render
 @docs render
 
 # Options
 @docs Property, value
-  
+
 # Appearance
 
 @docs label, floatingLabel, error, disabled, rows, cols
@@ -54,12 +54,12 @@ Textfields are implemented as `<input>` elements sitting inside a
 `<div>`, along with various helper elements. Supplying styling arguments (e.g.,
 `Options.css`) to `render` or `view` will apply these arguments to the
 outermost `<div>`.  If you wish to apply styling to the underlying `<input>`
-element, use the `style` property below. 
+element, use the `style` property below.
 
 @docs style
 
-# Type 
-@docs password, textarea, text', onInput
+# Type
+@docs password, textarea, text_, onInput
 @docs expandable, expandableIcon
 @docs onBlur, onFocus
 
@@ -72,7 +72,7 @@ element, use the `style` property below.
 -}
 
 import Html exposing (div, span, Html, text)
-import Html.Attributes exposing (class, type', style)
+import Html.Attributes exposing (class, type_, style)
 import Html.Events exposing (targetValue)
 import Json.Decode as Decoder
 import Platform.Cmd
@@ -112,7 +112,7 @@ type alias Config m =
 
 
 defaultConfig : Config m
-defaultConfig = 
+defaultConfig =
   { labelText = Nothing
   , labelFloat = False
   , error = Nothing
@@ -132,15 +132,15 @@ defaultConfig =
 
 {-| Type of Textfield options
 -}
-type alias Property m = 
+type alias Property m =
   Options.Property (Config m) m
 
 
 {-| Label of the textfield
 -}
-label : String -> Property m 
-label str = 
-  Options.set 
+label : String -> Property m
+label str =
+  Options.set
     (\config -> { config | labelText = Just str })
 
 
@@ -178,15 +178,15 @@ expandableIcon id =
 {-| Error message
 -}
 error : String -> Property m
-error str = 
+error str =
   Options.set
     (\config -> { config | error = Just str })
 
 
-{-| Current value of the textfield. 
+{-| Current value of the textfield.
 -}
 value : String -> Property m
-value str = 
+value str =
   Options.set
     (\config -> { config | value = Just str })
 
@@ -210,7 +210,7 @@ maxlength v =
 {-| Disable the textfield input
 -}
 disabled : Property m
-disabled = 
+disabled =
   Options.set
     (\config -> { config | disabled = True })
 
@@ -223,12 +223,12 @@ on event decoder =
       (\config ->
          { config |
              listeners = config.listeners ++ [(Html.Events.on event decoder)]})
-             
+
 
 {-| Message to dispatch on input
 -}
 onInput : (String -> m) -> Property m
-onInput f = 
+onInput f =
   on "input" (Decoder.map f targetValue)
 
 
@@ -279,7 +279,7 @@ style =
 
 {-| Sets the type of input to 'password'.
 -}
-password : Property m 
+password : Property m
 password =
   Options.set
     (\config -> { config | kind = Password })
@@ -292,10 +292,10 @@ textarea =
   Options.set
     (\config -> { config | kind = Textarea })
 
-{-| Sets the type of input to 'text'. (Name chosen to avoid clashing with Html.text)
+{-| Sets the type of input to 'text_. (Name chosen to avoid clashing with Html.text)
 -}
-text' : Property m
-text' =
+text_ : Property m
+text_ =
   Options.set
     (\config -> { config | kind = Text })
 
@@ -350,9 +350,9 @@ type Msg
 update : Msg -> Model -> Model
 update action model =
   case action of
-    Input str -> 
+    Input str ->
       { model | value = str }
-      
+
     Blur ->
       { model | isFocused = False }
 
@@ -368,14 +368,14 @@ update action model =
 Be aware that styling (third argument) is applied to the outermost element
 of the textfield's implementation, and so is mostly useful for positioning
 (e.g., `margin: 0 auto;` or `align-self: flex-end`). See `Textfield.style`
-if you need to apply styling to the underlying `<input>` element. 
+if you need to apply styling to the underlying `<input>` element.
 -}
 view : (Msg -> m) -> Model -> List (Property m) -> Html m
 view lift model options =
-  let 
-    ({ config } as summary) = 
+  let
+    ({ config } as summary) =
       Options.collect defaultConfig options
-    val = 
+    val =
       config.value |> Maybe.withDefault model.value
 
     isTextarea = config.kind == Textarea
@@ -390,8 +390,8 @@ view lift model options =
     -- However, if we are a textarea and rows and/or cols have been defined, add them instead
     typeAttributes =
       case config.kind of
-          Text -> [type' "text"]
-          Password -> [type' "password"]
+          Text -> [type_ "text"]
+          Password -> [type_ "password"]
           Textarea ->
             [] ++ (case config.rows of
                        Just r -> [Html.Attributes.rows r]
@@ -459,13 +459,13 @@ view lift model options =
       , cs "mdl-js-textfield"
       , cs "is-upgraded"
       , if config.labelFloat then cs "mdl-textfield--floating-label" else nop
-      , if config.error /= Nothing then cs "is-invalid" else nop 
+      , if config.error /= Nothing then cs "is-invalid" else nop
       , if val /= "" then cs "is-dirty" else nop
       , if model.isFocused && not config.disabled then cs "is-focused" else nop
       , if config.disabled then cs "is-disabled" else nop
       , cs "mdl-textfield--expandable" `Options.when` (config.expandable /= Nothing)
       ]
-      ( List.filterMap identity 
+      ( List.filterMap identity
           ([ defaultInput
            ])
       ) <| expHolder
@@ -485,16 +485,16 @@ view lift model options =
           , expandableId
           , Options.many config.inner
           ]
-          ([ Html.Attributes.disabled config.disabled 
+          ([ Html.Attributes.disabled config.disabled
            , Html.Attributes.autofocus config.autofocus
            ] ++ textValue ++ typeAttributes ++ maxlength ++ listeners)
           []
-      , Html.label 
+      , Html.label
           ([class "mdl-textfield__label"] ++ labelFor)
-          (case config.labelText of 
+          (case config.labelText of
             Just str -> [ text str ]
             Nothing -> [])
-      , config.error 
+      , config.error
           |> Maybe.map (\e -> span [class "mdl-textfield__error"] [text e])
           |> Maybe.withDefault (div [] [])
       ]
@@ -506,7 +506,7 @@ view lift model options =
 type alias Container c =
   { c | textfield : Indexed Model }
 
-{-| Component render. Below is an example, assuming boilerplate setup as indicated 
+{-| Component render. Below is an example, assuming boilerplate setup as indicated
   in `Material`, and a user message `ChangeAgeMsg Int`.
 
     Textfield.render Mdl [0] model.mdl
@@ -519,17 +519,17 @@ type alias Container c =
 Be aware that styling (third argument) is applied to the outermost element
 of the textfield's implementation, and so is mostly useful for positioning
 (e.g., `margin: 0 auto;` or `align-self: flex-end`). See `Textfield.style`
-if you need to apply styling to the underlying `<input>` element. 
+if you need to apply styling to the underlying `<input>` element.
 -}
-render 
+render
   : (Parts.Msg (Container c) m -> m)
   -> Parts.Index
   -> (Container c)
   -> List (Property m)
   -> Html m
 render =
-  Parts.create 
+  Parts.create
     view (\_ msg model -> Just (update msg model, Cmd.none))
-    .textfield (\x c -> { c | textfield = x }) 
+    .textfield (\x c -> { c | textfield = x })
     defaultModel
 

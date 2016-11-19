@@ -14,7 +14,7 @@ module Material.Snackbar exposing
 > action, the snackbar becomes a __toast__ component.
 
 Refer to [this site](http://debois.github.io/elm-mdl/#snackbar)
-for a live demo. 
+for a live demo.
 
 # Generating messages
 @docs Contents, toast, snackbar, add
@@ -27,7 +27,7 @@ for a live demo.
 
 # Render
 Snackbar does not have a `render` value. It must be used as a regular TEA
-component. 
+component.
 -}
 
 import Html exposing (..)
@@ -49,17 +49,17 @@ import Material.Helpers exposing (map2nd, delay, cmd, aria)
 or `snackbar` to construct `Contents`.
 
  - `message` defines the (text) message displayed
- - `action` defines a label for the action-button in the snackbar. If 
-    no action is provided, the snackbar is a message-only toast. 
- - `payload` defines the data returned by Snackbar actions for this message. 
-   You will usually choose this to be a message of yours for later dispatch, 
+ - `action` defines a label for the action-button in the snackbar. If
+    no action is provided, the snackbar is a message-only toast.
+ - `payload` defines the data returned by Snackbar actions for this message.
+   You will usually choose this to be a message of yours for later dispatch,
    e.g., if your snackbar has an "Undo" action, you would store the
-   corresponding action as the payload. 
+   corresponding action as the payload.
  - `timeout` is the amount of time the snackbar should be visible
- - `fade` is the duration of the fading animation of the snackbar. 
+ - `fade` is the duration of the fading animation of the snackbar.
 
 If you are satsified with the default timeout and fade, do not construct
-values of this type yourself; use `snackbar` and `toast` below instead. 
+values of this type yourself; use `snackbar` and `toast` below instead.
 -}
 type alias Contents a =
   { message : String
@@ -101,7 +101,7 @@ toast payload message =
   }
 
 
-{-| Generate snackbar with given payload, message and label. 
+{-| Generate snackbar with given payload, message and label.
 Timeout is 2750ms, fade 250ms.
 -}
 snackbar : a -> String -> String -> Contents a
@@ -131,7 +131,7 @@ type Transition
 
 
 next : Model a -> Cmd Transition -> Cmd (Msg a)
-next model = 
+next model =
   Cmd.map (Move model.seq)
 
 
@@ -141,32 +141,32 @@ move transition model =
     (Inert, Timeout) ->
       tryDequeue model
 
-    (Active contents, Clicked) -> 
+    (Active contents, Clicked) ->
       ( { model | state = Fading contents }
-      , Cmd.batch 
-          [ delay contents.fade Timeout |> next model 
+      , Cmd.batch
+          [ delay contents.fade Timeout |> next model
           , Click contents.payload |> cmd
           ]
       )
 
     (Active contents, Timeout) ->
       ( { model | state = Fading contents }
-      , Cmd.batch 
+      , Cmd.batch
           [ delay contents.fade Timeout |> next model
           ]
       )
 
     (Fading contents, Timeout) ->
       ( { model | state = Inert}
-      , Cmd.batch 
-          [ cmd Timeout |> next model 
+      , Cmd.batch
+          [ cmd Timeout |> next model
           , End contents.payload |> cmd
           ]
       )
 
     _ ->
       (model, none)
-      
+
 
 
 -- NOTIFICATION QUEUE
@@ -189,7 +189,7 @@ tryDequeue model =
           , queue = cs
           , seq = model.seq + 1
         }
-      , Cmd.batch 
+      , Cmd.batch
           [ delay c.timeout Timeout |> Cmd.map (Move (model.seq + 1))
           , cmd (Begin c.payload)
           ]
@@ -204,8 +204,8 @@ tryDequeue model =
 
 
 
-{-| Elm Architecture Msg type.  
-The following actions are observable to you: 
+{-| Elm Architecture Msg type.
+The following actions are observable to you:
 - `Begin a`. The snackbar is now displaying the message with payload `a`.
 - `End a`. The snackbar is done displaying the message with payload `a`.
 - `Click a`. The user clicked the action on the message with payload `a`.
@@ -220,7 +220,7 @@ type Msg a
   | Move Int Transition
 
 
-{-| Elm Architecture update function. 
+{-| Elm Architecture update function.
 -}
 update : Msg a -> Model a -> (Model a, Cmd (Msg a))
 update action model =
@@ -231,12 +231,12 @@ update action model =
       else
         (model, none)
 
-    _ -> 
-      -- Begin, End, Click are for external consumption only. 
+    _ ->
+      -- Begin, End, Click are for external consumption only.
       (model, none)
 
 
-{-| Add a message to the snackbar. If another message is currently displayed, 
+{-| Add a message to the snackbar. If another message is currently displayed,
 the provided message will be queued. You will be able to observe a `Begin` action
 (see `Msg` above) once the action begins displaying.
 
@@ -244,7 +244,7 @@ You must dispatch the returned effect for the Snackbar to begin displaying your
 message.
 -}
 add : Contents a -> Model a -> (Model a, Cmd (Msg a))
-add contents model = 
+add contents model =
   enqueue contents model |> tryDequeue
 
 
@@ -253,13 +253,13 @@ add contents model =
 
 
 
-{-| Elm architecture update function. 
+{-| Elm architecture update function.
 -}
 view : Model a -> Html (Msg a)
-view model = 
+view model =
   let
-    contents = 
-      case model.state of 
+    contents =
+      case model.state of
         Inert -> Nothing
         Active c -> Just c
         Fading c -> Just c
@@ -268,10 +268,10 @@ view model =
       case model.state of
         Inert -> False
         Active _ -> True
-        Fading _ -> False  
+        Fading _ -> False
 
-    action = 
-      Maybe.andThen contents .action 
+    action =
+      Maybe.andThen .action contents
   in
     div
       [ classList
@@ -284,18 +284,18 @@ view model =
       [ div
           [ class "mdl-snackbar__text"
           ]
-          (contents 
+          (contents
              |> Maybe.map (\c -> [ text c.message ])
              |> Maybe.withDefault []
           )
       , button
           (  class "mdl-snackbar__action"
-          :: type' "button"
+          :: type_ "button"
           :: aria "hidden"
-               ( action 
+               ( action
                    |> Maybe.map (always (not isActive))
-                   |> Maybe.withDefault True) 
-          :: ( action 
+                   |> Maybe.withDefault True)
+          :: ( action
                 |> Maybe.map (always [ onClick (Move model.seq Clicked) ])
                 |> Maybe.withDefault []
              )
@@ -311,17 +311,17 @@ view model =
 -- COMPONENT
 
 
-{- Component support for Snackbar is currently disabled. The type "Model a" of 
-the Snackbar Model escapes into the global Mdl model, polluting users model 
-with the type variable "a". This is unacceptable in itself; it makes 
-component support too hard to use for non-expert users. 
+{- Component support for Snackbar is currently disabled. The type "Model a" of
+the Snackbar Model escapes into the global Mdl model, polluting users model
+with the type variable "a". This is unacceptable in itself; it makes
+component support too hard to use for non-expert users.
 
 This problem is compounded by the elm compiler bug
 [#1192](https://github.com/elm-lang/elm-compiler/issues/1192), which causes
 (apparently) unhelpful error messages on errors related to wrong use of type
-constructors. 
+constructors.
 
-Component support for snackbar was implemented earlier. In case a solution 
+Component support for snackbar was implemented earlier. In case a solution
 presents itself, the last commit to contain this support was:
 
 f0a85912654713238694f48b1a4b7d5a7459965f
