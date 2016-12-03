@@ -299,10 +299,10 @@ drawer =
   , Layout.navigation
     []
     [ Layout.link
-        [ Layout.href "https://github.com/debois/elm-mdl" ]
+        [ Layout.href "https://github.com/MichaelCombs28/elm-mdl" ]
         [ text "github" ]
     , Layout.link
-        [ Layout.href "http://package.elm-lang.org/packages/debois/elm-mdl/latest/" ]
+        [ Layout.href "http://package.elm-lang.org/packages/MichaelCombs28/elm-mdl/latest/" ]
         [ text "elm-package" ]
     , Layout.link
         [ Layout.href "#cards"
@@ -327,10 +327,10 @@ header model =
                 [ Layout.onClick ToggleHeader]
                 [ Icon.i "photo" ]
             , Layout.link
-                [ Layout.href "https://github.com/debois/elm-mdl"]
+                [ Layout.href "https://github.com/MichaelCombs28/elm-mdl"]
                 [ span [] [text "github"] ]
             , Layout.link
-                [ Layout.href "http://package.elm-lang.org/packages/debois/elm-mdl/latest/" ]
+                [ Layout.href "http://package.elm-lang.org/packages/MichaelCombs28/elm-mdl/latest/" ]
                 [ text "elm-package" ]
             ]
         ]
