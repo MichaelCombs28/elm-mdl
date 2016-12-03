@@ -1,15 +1,17 @@
-
 import Html exposing (..)
 import Html.Attributes exposing (href, class, style)
 import Html.Lazy
-import Html.App as App
 import Platform.Cmd exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import String
+import Debug
+import Task
 
 import Navigation
-import RouteUrl as Routing
+import Navigation.Router as Router exposing (UrlChange, HistoryEntry(..))
+
+import UrlParser exposing ((</>))
 
 import Material
 import Material.Color as Color
@@ -49,7 +51,9 @@ import Demo.Chips
 
 
 type alias Model =
-  { mdl : Material.Model
+  { router : Router.Model
+  , history : List Navigation.Location
+  , mdl : Material.Model
   , buttons : Demo.Buttons.Model
   , badges : Demo.Badges.Model
   , layout : Demo.Layout.Model
@@ -75,9 +79,11 @@ type alias Model =
   }
 
 
-model : Model
-model =
-  { mdl = Material.model
+initModel : Navigation.Location -> Model
+initModel location =
+  { router = Router.init location
+  , history = [] -- [ location ]
+  , mdl = Layout.setTabsWidth 2124 Material.model
   , buttons = Demo.Buttons.model
   , badges = Demo.Badges.model
   , layout = Demo.Layout.model
@@ -108,7 +114,8 @@ model =
 
 
 type Msg
-  = SelectTab Int
+  = LocationChanged Navigation.Location
+  | SelectTab Int
   | Mdl (Material.Msg Msg)
   | BadgesMsg Demo.Badges.Msg
   | ButtonsMsg Demo.Buttons.Msg
@@ -138,70 +145,118 @@ nth k xs =
   List.drop k xs |> List.head
 
 
+{-| Our update function separates the processing of LocationChanged
+messages from the processing of other, "internal" messages.
+-}
 update : Msg -> Model -> ( Model, Cmd Msg )
-update action model =
+update msg model =
+  case msg of
+      LocationChanged location ->
+        let
+          ( newRouter, external ) =
+            Router.locationChanged model.router location
+
+              -- We keep the location history as an example, but
+              -- don't change our URL based on the history.
+          newModel =
+            { model
+              | history = location :: model.history
+              , router = newRouter
+            }
+        in
+            Router.processLocation external
+              update location2messages location newModel []
+
+          -- Non-location messages that may change model state
+          -- call a sub-function that returns a new model with
+          -- a router updated from the `Router.urlChanged` function.
+      _ ->
+        let
+          ( newModel, cmd, mightChangeUrl ) = updateModelState msg model
+        in
+            if mightChangeUrl then
+              let
+                ( newRouter, routerCmd ) =
+                  Router.urlChanged model.router (delta2url model newModel)
+              in
+                  ( { newModel | router = newRouter }
+                  , Cmd.batch [ cmd, routerCmd ]
+                  )
+            else
+              ( newModel, cmd )
+
+
+
+updateModelState : Msg -> Model -> ( Model, Cmd Msg, Bool )
+updateModelState action model =
   case action of
     SelectTab k ->
-      ( { model | selectedTab = k } , Cmd.none )
+      ( { model | selectedTab = k } , Cmd.none, True )
 
     ToggleHeader ->
-      ( { model | transparentHeader = not model.transparentHeader }, Cmd.none)
+      ( { model | transparentHeader = not model.transparentHeader }, Cmd.none, False)
 
     Mdl msg ->
-      Material.update msg model
+      noUrlChange (Material.update msg model)
 
-    ButtonsMsg   a -> lift  .buttons    (\m x->{m|buttons   =x}) ButtonsMsg  Demo.Buttons.update    a model
-    BadgesMsg    a -> lift  .badges     (\m x->{m|badges    =x}) BadgesMsg   Demo.Badges.update    a model
-    LayoutMsg a -> lift  .layout    (\m x->{m|layout   =x}) LayoutMsg  Demo.Layout.update    a model
-    MenusMsg a -> lift  .menus    (\m x->{m|menus   =x}) MenusMsg  Demo.Menus.update    a model
-    TextfieldMsg m -> 
-      Demo.Textfields.update m model.textfields 
+    ButtonsMsg     a -> lift  .buttons    (\m x->{m|buttons       =x}) ButtonsMsg  Demo.Buttons.update       a model |> noUrlChange
+    BadgesMsg      a -> lift  .badges     (\m x->{m|badges        =x}) BadgesMsg   Demo.Badges.update        a model |> noUrlChange
+    LayoutMsg      a -> lift  .layout     (\m x->{m|layout        =x}) LayoutMsg  Demo.Layout.update         a model |> noUrlChange
+    MenusMsg       a -> lift  .menus      (\m x->{m|menus         =x}) MenusMsg  Demo.Menus.update           a model |> noUrlChange
+    TextfieldMsg m ->
+      Demo.Textfields.update m model.textfields
         |> Maybe.map (map1st (\x -> { model | textfields = x }))
         |> Maybe.withDefault (model, Cmd.none)
         |> map2nd (Cmd.map TextfieldMsg)
-    SnackbarMsg  a -> lift  .snackbar   (\m x->{m|snackbar  =x}) SnackbarMsg Demo.Snackbar.update   a model
-    TogglesMsg    a -> lift .toggles   (\m x->{m|toggles    =x}) TogglesMsg Demo.Toggles.update   a model
-    TablesMsg   a -> lift  .tables    (\m x->{m|tables   =x}) TablesMsg  Demo.Tables.update    a model
-    LoadingMsg   a -> lift  .loading    (\m x->{m|loading   =x}) LoadingMsg  Demo.Loading.update    a model
-    FooterMsg   a -> lift  .footers    (\m x->{m|footers   =x}) FooterMsg  Demo.Footer.update    a model
-    SliderMsg   a -> lift  .slider    (\m x->{m|slider   =x}) SliderMsg  Demo.Slider.update    a model
-    TooltipMsg   a -> lift  .tooltip    (\m x->{m|tooltip   =x}) TooltipMsg  Demo.Tooltip.update    a model
-    TabMsg   a -> lift  .tabs    (\m x->{m|tabs   =x}) TabMsg  Demo.Tabs.update    a model
-    TypographyMsg  a -> lift  .typography   (\m x->{m|typography  =x}) TypographyMsg Demo.Typography.update   a model
-    CardsMsg   a -> lift  .cards    (\m x->{m|cards   =x}) CardsMsg  Demo.Cards.update    a model
-    ListsMsg   a -> lift  .lists    (\m x->{m|lists   =x}) ListsMsg  Demo.Lists.update    a model
-    DialogMsg a -> lift .dialog (\m x->{m|dialog =x}) DialogMsg Demo.Dialog.update a model
-    ElevationMsg a -> lift .elevation (\m x->{m|elevation=x}) ElevationMsg Demo.Elevation.update a model
-    ChipMsg a -> lift .chips (\m x->{m|chips=x}) ChipMsg Demo.Chips.update a model
+        |> noUrlChange
+    SnackbarMsg    a -> lift  .snackbar     (\m x->{m|snackbar    =x}) SnackbarMsg Demo.Snackbar.update      a model |> noUrlChange
+    TogglesMsg     a -> lift .toggles       (\m x->{m|toggles     =x}) TogglesMsg Demo.Toggles.update        a model |> noUrlChange
+    TablesMsg      a -> lift  .tables       (\m x->{m|tables      =x}) TablesMsg  Demo.Tables.update         a model |> noUrlChange
+    LoadingMsg     a -> lift  .loading      (\m x->{m|loading     =x}) LoadingMsg  Demo.Loading.update       a model |> noUrlChange
+    FooterMsg      a -> lift  .footers      (\m x->{m|footers     =x}) FooterMsg  Demo.Footer.update         a model |> noUrlChange
+    SliderMsg      a -> lift  .slider       (\m x->{m|slider      =x}) SliderMsg  Demo.Slider.update         a model |> noUrlChange
+    TooltipMsg     a -> lift  .tooltip      (\m x->{m|tooltip     =x}) TooltipMsg  Demo.Tooltip.update       a model |> noUrlChange
+    TabMsg         a -> lift  .tabs         (\m x->{m|tabs        =x}) TabMsg  Demo.Tabs.update              a model |> noUrlChange
+    TypographyMsg  a -> lift  .typography   (\m x->{m|typography  =x}) TypographyMsg Demo.Typography.update  a model |> noUrlChange
+    CardsMsg       a -> lift  .cards        (\m x->{m|cards       =x}) CardsMsg  Demo.Cards.update           a model |> noUrlChange
+    ListsMsg       a -> lift  .lists        (\m x->{m|lists       =x}) ListsMsg  Demo.Lists.update           a model |> noUrlChange
+    DialogMsg      a -> lift .dialog        (\m x->{m|dialog      =x}) DialogMsg Demo.Dialog.update          a model |> noUrlChange
+    ElevationMsg   a -> lift .elevation     (\m x->{m|elevation   =x}) ElevationMsg Demo.Elevation.update    a model |> noUrlChange
+    ChipMsg        a -> lift .chips         (\m x->{m|chips       =x}) ChipMsg Demo.Chips.update             a model |> noUrlChange
     --TemplateMsg  a -> lift  .template   (\m x->{m|template  =x}) TemplateMsg Demo.Template.update   a model
+    LocationChanged a -> (model, Cmd.none, False)
 
+
+noUrlChange : ( Model, Cmd Msg ) -> ( Model, Cmd Msg, Bool )
+noUrlChange ( model, cmd ) =
+  ( model , cmd, False )
 
 -- VIEW
 
 
 tabs : List (String, String, Model -> Html Msg)
 tabs =
-  [ ("Buttons", "buttons", .buttons >> Demo.Buttons.view >> App.map ButtonsMsg)
-  , ("Badges", "badges", .badges >> Demo.Badges.view >> App.map BadgesMsg)
-  , ("Cards", "cards", .cards >> Demo.Cards.view >> App.map CardsMsg)
-  , ("Chips", "chips", .chips >> Demo.Chips.view >> App.map ChipMsg)
-  , ("Dialog", "dialog", .dialog >> Demo.Dialog.view >> App.map DialogMsg)
-  , ("Elevation", "elevation", .elevation >> Demo.Elevation.view >> App.map ElevationMsg)
-  , ("Footers", "footers", .footers >> Demo.Footer.view >> App.map FooterMsg)
+  [ ("Buttons", "buttons", .buttons >> Demo.Buttons.view >> Html.map ButtonsMsg)
+  , ("Badges", "badges", .badges >> Demo.Badges.view >> Html.map BadgesMsg)
+  , ("Cards", "cards", .cards >> Demo.Cards.view >> Html.map CardsMsg)
+  , ("Chips", "chips", .chips >> Demo.Chips.view >> Html.map ChipMsg)
+  , ("Dialog", "dialog", .dialog >> Demo.Dialog.view >> Html.map DialogMsg)
+  , ("Elevation", "elevation", .elevation >> Demo.Elevation.view >> Html.map ElevationMsg)
+  , ("Footers", "footers", .footers >> Demo.Footer.view >> Html.map FooterMsg)
   , ("Grid", "grid", \_ -> Demo.Grid.view)
-  , ("Layout", "layout", .layout >> Demo.Layout.view >> App.map LayoutMsg)
-  , ("Lists", "lists", .lists >> Demo.Lists.view >> App.map ListsMsg)
-  , ("Loading", "loading", .loading >> Demo.Loading.view >> App.map LoadingMsg)
-  , ("Menus", "menus", .menus >> Demo.Menus.view >> App.map MenusMsg)
-  , ("Sliders", "sliders", .slider >> Demo.Slider.view >> App.map SliderMsg)
-  , ("Snackbar", "snackbar", .snackbar >> Demo.Snackbar.view >> App.map SnackbarMsg)
-  , ("Tables", "tables", .tables >> Demo.Tables.view >> App.map TablesMsg)
-  , ("Tabs", "tabs", .tabs >> Demo.Tabs.view >> App.map TabMsg)
-  , ("Textfields", "textfields", .textfields >> Demo.Textfields.view >> App.map TextfieldMsg)
-  , ("Toggles", "toggles", .toggles >> Demo.Toggles.view >> App.map TogglesMsg)
-  , ("Tooltips", "tooltips", .tooltip >> Demo.Tooltip.view >> App.map TooltipMsg)
-  , ("Typography", "typography", .typography >> Demo.Typography.view >> App.map TypographyMsg)
-  --, ("Template", "template", .template >> Demo.Template.view >> App.map TemplateMsg)
+  , ("Layout", "layout", .layout >> Demo.Layout.view >> Html.map LayoutMsg)
+  , ("Lists", "lists", .lists >> Demo.Lists.view >> Html.map ListsMsg)
+  , ("Loading", "loading", .loading >> Demo.Loading.view >> Html.map LoadingMsg)
+  , ("Menus", "menus", .menus >> Demo.Menus.view >> Html.map MenusMsg)
+  , ("Sliders", "sliders", .slider >> Demo.Slider.view >> Html.map SliderMsg)
+  , ("Snackbar", "snackbar", .snackbar >> Demo.Snackbar.view >> Html.map SnackbarMsg)
+  , ("Tables", "tables", .tables >> Demo.Tables.view >> Html.map TablesMsg)
+  , ("Tabs", "tabs", .tabs >> Demo.Tabs.view >> Html.map TabMsg)
+  , ("Textfields", "textfields", .textfields >> Demo.Textfields.view >> Html.map TextfieldMsg)
+  , ("Toggles", "toggles", .toggles >> Demo.Toggles.view >> Html.map TogglesMsg)
+  , ("Tooltips", "tooltips", .tooltip >> Demo.Tooltip.view >> Html.map TooltipMsg)
+  , ("Typography", "typography", .typography >> Demo.Typography.view >> Html.map TypographyMsg)
+  --, ("Template", "template", .template >> Demo.Template.view >> Html.map TemplateMsg)
   ]
 
 
@@ -243,7 +298,7 @@ drawer =
   [ Layout.title [] [ text "Example drawer" ]
   , Layout.navigation
     []
-    [  Layout.link
+    [ Layout.link
         [ Layout.href "https://github.com/debois/elm-mdl" ]
         [ text "github" ]
     , Layout.link
@@ -285,11 +340,11 @@ header model =
 
 
 view : Model -> Html Msg
-view = Html.Lazy.lazy view'
+view = Html.Lazy.lazy view_
 
 
-view' : Model -> Html Msg
-view' model =
+view_ : Model -> Html Msg
+view_ model =
   let
     top =
       (Array.get model.selectedTab tabViews |> Maybe.withDefault e404) model
@@ -297,15 +352,14 @@ view' model =
     Layout.render Mdl model.mdl
       [ Layout.selectedTab model.selectedTab
       , Layout.onSelectTab SelectTab
-      , Layout.fixedHeader `when` model.layout.fixedHeader
-      , Layout.fixedDrawer `when` model.layout.fixedDrawer
-      , Layout.fixedTabs `when` model.layout.fixedTabs
-      , (case model.layout.header of
+      , model.layout.fixedHeader |> when Layout.fixedHeader
+      , model.layout.fixedDrawer |> when Layout.fixedDrawer
+      , model.layout.fixedTabs |> when Layout.fixedTabs
+      , model.layout.withHeader |> when (case model.layout.header of
           Demo.Layout.Waterfall x -> Layout.waterfall x
           Demo.Layout.Seamed -> Layout.seamed
           Demo.Layout.Standard -> Options.nop
           Demo.Layout.Scrolling -> Layout.scrolling)
-        `when` model.layout.withHeader
       , if model.transparentHeader then Layout.transparentHeader else Options.nop
       ]
       { header = header model
@@ -332,15 +386,15 @@ view' model =
            [ Html.Attributes.attribute "src" "assets/highlight/highlight.pack.js" ]
            []
         , case nth model.selectedTab tabs of
-            Just ( "Dialog", _, _ ) -> 
-              App.map DialogMsg (Demo.Dialog.element model.dialog)
+            Just ( "Dialog", _, _ ) ->
+              Html.map DialogMsg (Demo.Dialog.element model.dialog)
               {- Because of limitations on browsers that have non-native (polyfilled)
               <dialog> elements, our dialog element /may/ have to sit up here. However,
-              running in elm-reactor will never load the polyfill, so we render the 
-              dialog (wrongly if there is no polyfill) only when the Dialog tab is 
+              running in elm-reactor will never load the polyfill, so we render the
+              dialog (wrongly if there is no polyfill) only when the Dialog tab is
               active.
               -}
-            _ -> 
+            _ ->
               div [] []
         ]
     )
@@ -349,15 +403,23 @@ view' model =
 -- ROUTING
 
 
+--delta2urlUsingUrlParser : Model -> Model -> Maybe UrlChange
+--delta2urlUsingUrlParser _ current =
+--  Just <|
+--    { entry = NewEntry
+--    , url = "#!/" ++ (toString current.counter)
+--    }
+
+
 urlOf : Model -> String
 urlOf model =
   "#" ++ (Array.get model.selectedTab tabUrls |> Maybe.withDefault "")
 
 
-delta2url : Model -> Model -> Maybe Routing.UrlChange
+delta2url : Model -> Model -> Maybe Router.UrlChange
 delta2url model1 model2 =
   if model1.selectedTab /= model2.selectedTab then
-    { entry = Routing.NewEntry
+    { entry = Router.NewEntry
     , url = urlOf model2
     } |> Just
   else
@@ -367,45 +429,40 @@ delta2url model1 model2 =
 location2messages : Navigation.Location -> List Msg
 location2messages location =
   [ case String.dropLeft 1 location.hash of
-      "" ->
-        SelectTab 0
+        "" ->
+          SelectTab 0
 
-      x ->
-        Dict.get x urlTabs
+        x ->
+          Dict.get x urlTabs
           |> Maybe.withDefault -1
           |> SelectTab
   ]
 
 
-
 -- APP
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-  Routing.program
-    { delta2url = delta2url
-    , location2messages = location2messages
-    , init =
-        ( { model
-          | mdl = Layout.setTabsWidth 2124 model.mdl
-          {- elm gives us no way to measure the actual width of tabs. We
-             hardwire it. If you add a tab, remember to update this. Find the
-             new value using: 
-
-             document.getElementsByClassName("mdl-layout__tab-bar")[0].scrollWidth
-          -}
-          }
-          , Material.init Mdl
-        )
+  Navigation.program LocationChanged
+    { init = init
     , view = view
-    , subscriptions = \model ->
-        Sub.batch
-        [ Sub.map MenusMsg (Menu.subs Demo.Menus.Mdl model.menus.mdl)
-        , Material.subscriptions Mdl model 
-        ]
+    , subscriptions = subscriptions
     , update = update
     }
+
+
+init : Navigation.Location -> ( Model, Cmd Msg )
+init location =
+  ( initModel location, Cmd.batch [ Material.init Mdl, Task.succeed location |> Task.perform LocationChanged ] )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.batch
+    [ Sub.map MenusMsg (Menu.subs Demo.Menus.Mdl model.menus.mdl)
+    , Material.subscriptions Mdl model
+    ]
 
 
 -- CSS
