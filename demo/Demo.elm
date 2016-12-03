@@ -403,14 +403,6 @@ view_ model =
 -- ROUTING
 
 
---delta2urlUsingUrlParser : Model -> Model -> Maybe UrlChange
---delta2urlUsingUrlParser _ current =
---  Just <|
---    { entry = NewEntry
---    , url = "#!/" ++ (toString current.counter)
---    }
-
-
 urlOf : Model -> String
 urlOf model =
   "#" ++ (Array.get model.selectedTab tabUrls |> Maybe.withDefault "")
