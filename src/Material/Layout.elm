@@ -295,7 +295,7 @@ update_ f action model =
             -}
             let
                 isSmall =
-                    1024 > width
+                    1024 >= width
 
                 tabScrollState =
                     model.tabScrollState.width
